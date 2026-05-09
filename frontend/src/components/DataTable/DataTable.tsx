@@ -118,7 +118,8 @@ export default function DataTable({ datasetId }: Props) {
             onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1) }}
             className="select w-auto text-xs py-1.5"
           >
-            {[25, 50, 100, 200].map((n) => <option key={n}>{n}</option>)}
+            {[25, 50, 100, 200].map((n) => <option key={n} value={n}>{n}</option>)}
+            <option value={100000}>All</option>
           </select>
           <span className="text-xs text-slate-400">rows</span>
           <div className="w-px h-5 bg-slate-200 dark:bg-slate-700 mx-1" />
