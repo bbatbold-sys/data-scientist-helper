@@ -2,8 +2,8 @@
 
 A professional AI-powered data cleaning, visualization, and analysis platform. Upload datasets, clean them with one click, visualize with 9 chart types, and get AI-generated insights — all in a modern, responsive interface.
 
-**Live Demo:** [your-app.vercel.app](https://your-app.vercel.app)  
-**API Docs:** [your-backend.up.railway.app/docs](https://your-backend.up.railway.app/docs)
+**Live Demo:** [data-scientist-helper.vercel.app](https://data-scientist-helper.vercel.app)  
+**API Docs:** [data-scientist-helper-production.up.railway.app/docs](https://data-scientist-helper-production.up.railway.app/docs)
 
 ---
 
@@ -105,7 +105,7 @@ App will be available at http://localhost:5173
 2. Set the **Root Directory** to `frontend`
 3. Add environment variable:
    ```
-   VITE_API_URL=https://your-backend.up.railway.app
+   VITE_API_URL=https://data-scientist-helper-production.up.railway.app
    ```
 4. Deploy — Vercel auto-detects Vite
 
