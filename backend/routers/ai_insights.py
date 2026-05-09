@@ -11,7 +11,7 @@ from utils.storage import load_dataset, load_registry
 router = APIRouter()
 
 GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta"
-GEMINI_MODEL = "gemini-2.0-flash-lite"
+GEMINI_MODEL = "gemini-2.0-flash"
 GEMINI_URL = f"{GEMINI_BASE}/models/{GEMINI_MODEL}:generateContent"
 
 
