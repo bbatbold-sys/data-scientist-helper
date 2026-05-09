@@ -27,22 +27,36 @@ class ConcatBody(BaseModel):
     right_id: str
     axis: str = "rows"   # "rows" or "columns"
     new_name: str = "concatenated_dataset"
+    left_columns: list[str] | None = None
+    right_columns: list[str] | None = None
+
+
+def _apply_concat(body: ConcatBody):
+    left = load_dataset(body.left_id)
+    right = load_dataset(body.right_id)
+    if body.left_columns:
+        missing = [c for c in body.left_columns if c not in left.columns]
+        if missing:
+            raise HTTPException(400, f"Columns not in left dataset: {missing}")
+        left = left[body.left_columns]
+    if body.right_columns:
+        missing = [c for c in body.right_columns if c not in right.columns]
+        if missing:
+            raise HTTPException(400, f"Columns not in right dataset: {missing}")
+        right = right[body.right_columns]
+    ax = 0 if body.axis == "rows" else 1
+    # reset index for rows concat only; keep column names for columns concat
+    return pd.concat([left, right], axis=ax, ignore_index=(ax == 0))
 
 
 @router.post("/concat")
 def concat_datasets(body: ConcatBody):
     try:
-        left = load_dataset(body.left_id)
-        right = load_dataset(body.right_id)
+        result = _apply_concat(body)
+    except HTTPException:
+        raise
     except FileNotFoundError as e:
         raise HTTPException(404, str(e))
-
-    if body.axis not in ("rows", "columns"):
-        raise HTTPException(400, "axis must be 'rows' or 'columns'")
-
-    ax = 0 if body.axis == "rows" else 1
-    try:
-        result = pd.concat([left, right], axis=ax, ignore_index=True)
     except Exception as e:
         raise HTTPException(400, f"Concatenation failed: {e}")
 
@@ -55,14 +69,11 @@ def concat_datasets(body: ConcatBody):
 @router.post("/concat/preview")
 def concat_preview(body: ConcatBody):
     try:
-        left = load_dataset(body.left_id)
-        right = load_dataset(body.right_id)
+        result = _apply_concat(body)
+    except HTTPException:
+        raise
     except FileNotFoundError as e:
         raise HTTPException(404, str(e))
-
-    ax = 0 if body.axis == "rows" else 1
-    try:
-        result = pd.concat([left, right], axis=ax, ignore_index=True)
     except Exception as e:
         raise HTTPException(400, f"Concatenation failed: {e}")
 

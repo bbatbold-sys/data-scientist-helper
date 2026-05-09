@@ -145,6 +145,8 @@ export interface ConcatParams {
   right_id: string
   axis: 'rows' | 'columns'
   new_name: string
+  left_columns?: string[]
+  right_columns?: string[]
 }
 
 export async function concatDatasets(params: ConcatParams): Promise<DatasetInfo> {

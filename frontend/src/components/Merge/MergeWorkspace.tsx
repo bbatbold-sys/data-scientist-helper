@@ -51,6 +51,12 @@ export default function MergeWorkspace() {
   const [cRightId, setCRightId] = useState('')
   const [axis, setAxis] = useState<'rows' | 'columns'>('rows')
   const [cNewName, setCNewName] = useState('concatenated_dataset')
+  const [cLeftCols, setCLeftCols] = useState<string[]>([])
+  const [cRightCols, setCRightCols] = useState<string[]>([])
+
+  const toggleCol = (col: string, selected: string[], setSelected: (v: string[]) => void) => {
+    setSelected(selected.includes(col) ? selected.filter((c) => c !== col) : [...selected, col])
+  }
 
   const [preview, setPreview] = useState<{ data: Record<string, unknown>[]; columns: string[]; total_rows: number } | null>(null)
   const [loading, setLoading] = useState<'preview' | 'merge' | null>(null)
@@ -61,7 +67,14 @@ export default function MergeWorkspace() {
   const cRightDs = datasets.find((d) => d.id === cRightId)
 
   const sqlParams: MergeParams = { left_id: leftId, right_id: rightId, left_key: leftKey, right_key: rightKey, how, new_name: newName }
-  const concatParams: ConcatParams = { left_id: cLeftId, right_id: cRightId, axis, new_name: cNewName }
+  const concatParams: ConcatParams = {
+    left_id: cLeftId,
+    right_id: cRightId,
+    axis,
+    new_name: cNewName,
+    left_columns: cLeftCols.length > 0 ? cLeftCols : undefined,
+    right_columns: cRightCols.length > 0 ? cRightCols : undefined,
+  }
 
   const handlePreview = async () => {
     if (mode === 'sql') {
@@ -257,20 +270,56 @@ export default function MergeWorkspace() {
 
             <div className="p-3 bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800 rounded-xl">
               <label className="label text-green-700 dark:text-green-400">First Dataset</label>
-              <select className="select" value={cLeftId} onChange={(e) => setCLeftId(e.target.value)}>
+              <select className="select mb-2" value={cLeftId} onChange={(e) => { setCLeftId(e.target.value); setCLeftCols([]) }}>
                 <option value="">Select dataset…</option>
                 {datasets.filter((d) => d.id !== cRightId).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
-              {cLeftDs && <p className="text-xs text-green-600 dark:text-green-400 mt-1">{cLeftDs.rows} rows · {cLeftDs.columns.length} cols</p>}
+              {cLeftDs && (
+                <>
+                  <p className="text-xs text-green-600 dark:text-green-400 mb-1">{cLeftDs.rows} rows · {cLeftDs.columns.length} cols</p>
+                  <label className="label text-green-700 dark:text-green-400">Columns (all if none selected)</label>
+                  <div className="max-h-28 overflow-y-auto space-y-1 scrollbar-thin">
+                    {cLeftDs.columns.map((col) => (
+                      <label key={col} className="flex items-center gap-2 cursor-pointer hover:bg-green-100 dark:hover:bg-green-900/20 px-1 rounded">
+                        <input
+                          type="checkbox"
+                          checked={cLeftCols.includes(col)}
+                          onChange={() => toggleCol(col, cLeftCols, setCLeftCols)}
+                          className="accent-green-500"
+                        />
+                        <span className="text-xs text-slate-700 dark:text-slate-300 truncate">{col}</span>
+                      </label>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="p-3 bg-purple-50 dark:bg-purple-900/10 border border-purple-200 dark:border-purple-800 rounded-xl">
               <label className="label text-purple-700 dark:text-purple-400">Second Dataset</label>
-              <select className="select" value={cRightId} onChange={(e) => setCRightId(e.target.value)}>
+              <select className="select mb-2" value={cRightId} onChange={(e) => { setCRightId(e.target.value); setCRightCols([]) }}>
                 <option value="">Select dataset…</option>
                 {datasets.filter((d) => d.id !== cLeftId).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
-              {cRightDs && <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">{cRightDs.rows} rows · {cRightDs.columns.length} cols</p>}
+              {cRightDs && (
+                <>
+                  <p className="text-xs text-purple-600 dark:text-purple-400 mb-1">{cRightDs.rows} rows · {cRightDs.columns.length} cols</p>
+                  <label className="label text-purple-700 dark:text-purple-400">Columns (all if none selected)</label>
+                  <div className="max-h-28 overflow-y-auto space-y-1 scrollbar-thin">
+                    {cRightDs.columns.map((col) => (
+                      <label key={col} className="flex items-center gap-2 cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/20 px-1 rounded">
+                        <input
+                          type="checkbox"
+                          checked={cRightCols.includes(col)}
+                          onChange={() => toggleCol(col, cRightCols, setCRightCols)}
+                          className="accent-purple-500"
+                        />
+                        <span className="text-xs text-slate-700 dark:text-slate-300 truncate">{col}</span>
+                      </label>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
 
             <div>
