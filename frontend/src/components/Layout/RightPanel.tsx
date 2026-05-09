@@ -77,8 +77,10 @@ export default function RightPanel() {
     try {
       const result = await analyzeDataset(activeDatasetId)
       setInsight(result)
-    } catch {
-      toast.error('Analysis failed. Check your GEMINI_API_KEY in Railway.')
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { detail?: string }; status?: number } }
+      const detail = err?.response?.data?.detail || `HTTP ${err?.response?.status}` || 'Unknown error'
+      toast.error(`Analysis failed: ${detail}`)
     } finally {
       setAnalyzing(false)
     }

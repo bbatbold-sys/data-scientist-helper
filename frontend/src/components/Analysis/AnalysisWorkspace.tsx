@@ -123,8 +123,10 @@ export default function AnalysisWorkspace({ datasetId }: Props) {
     try {
       const result = await analyzeDataset(datasetId)
       setInsight(result)
-    } catch {
-      toast.error('Analysis failed. Make sure GEMINI_API_KEY is set in Railway.')
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { detail?: string }; status?: number } }
+      const detail = err?.response?.data?.detail || `HTTP ${err?.response?.status}` || 'Unknown error'
+      toast.error(`Analysis failed: ${detail}`)
     } finally {
       setAnalyzing(false)
     }
