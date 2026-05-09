@@ -10,7 +10,19 @@ from utils.storage import load_dataset, load_registry
 
 router = APIRouter()
 
-GEMINI_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent"
+GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta"
+GEMINI_MODEL = "gemini-2.0-flash-lite"
+GEMINI_URL = f"{GEMINI_BASE}/models/{GEMINI_MODEL}:generateContent"
+
+
+@router.get("/models")
+def list_models():
+    key = os.getenv("GEMINI_API_KEY")
+    if not key:
+        raise HTTPException(503, "GEMINI_API_KEY not set")
+    resp = requests.get(f"{GEMINI_BASE}/models", params={"key": key}, timeout=15)
+    models = [m["name"] for m in resp.json().get("models", [])]
+    return {"models": models, "current": GEMINI_MODEL}
 
 
 def _call_gemini(prompt: str) -> str:
