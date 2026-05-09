@@ -78,7 +78,7 @@ export default function RightPanel() {
       const result = await analyzeDataset(activeDatasetId)
       setInsight(result)
     } catch {
-      toast.error('Analysis failed. Check your ANTHROPIC_API_KEY.')
+      toast.error('Analysis failed. Check your GEMINI_API_KEY in Railway.')
     } finally {
       setAnalyzing(false)
     }

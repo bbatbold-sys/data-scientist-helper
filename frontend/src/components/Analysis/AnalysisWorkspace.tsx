@@ -124,7 +124,7 @@ export default function AnalysisWorkspace({ datasetId }: Props) {
       const result = await analyzeDataset(datasetId)
       setInsight(result)
     } catch {
-      toast.error('Analysis failed. Make sure ANTHROPIC_API_KEY is set in the backend.')
+      toast.error('Analysis failed. Make sure GEMINI_API_KEY is set in Railway.')
     } finally {
       setAnalyzing(false)
     }
