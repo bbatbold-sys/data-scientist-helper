@@ -126,27 +126,32 @@ export default function VisualizationWorkspace({ datasetId }: Props) {
     enabled: !!colStats,
   })
 
-  const numericCols = useMemo(() => colStats?.filter((s) => s.dtype.includes('int') || s.dtype.includes('float')).map((s) => s.column) ?? [], [colStats])
-  const allCols = useMemo(() => colStats?.map((s) => s.column) ?? [], [colStats])
+  const ROW_NUM = '#'
+  const numericCols = useMemo(() => [ROW_NUM, ...(colStats?.filter((s) => s.dtype.includes('int') || s.dtype.includes('float')).map((s) => s.column) ?? [])], [colStats])
+  const allCols = useMemo(() => [ROW_NUM, ...(colStats?.map((s) => s.column) ?? [])], [colStats])
   const rows = previewData?.data ?? []
+
+  const resolveCol = (col: string, row: Record<string, unknown>, idx: number) =>
+    col === ROW_NUM ? idx + 1 : row[col]
 
   const chartData = useMemo(() => {
     if (!xCol || !rows.length) return []
     if (chartType === 'histogram') {
-      const vals = rows.map((r) => Number(r[xCol])).filter((v) => !isNaN(v))
+      const vals = rows.map((r, i) => Number(resolveCol(xCol, r, i))).filter((v) => !isNaN(v))
       return computeHistogram(vals)
     }
     if (chartType === 'pie') {
       const counts: Record<string, number> = {}
-      rows.forEach((r) => { const v = String(r[xCol]); counts[v] = (counts[v] || 0) + 1 })
+      rows.forEach((r, i) => { const v = String(resolveCol(xCol, r, i)); counts[v] = (counts[v] || 0) + 1 })
       return Object.entries(counts).slice(0, 12).map(([name, value]) => ({ name, value }))
     }
     if (chartType === 'correlation') {
-      return computeCorrelation(rows, numericCols.slice(0, 10))
+      const corrCols = numericCols.filter((c) => c !== ROW_NUM).slice(0, 10)
+      return computeCorrelation(rows, corrCols)
     }
-    return rows.slice(0, 200).map((r) => {
-      const obj: Record<string, unknown> = { [xCol]: r[xCol] }
-      yCols.forEach((y) => { obj[y] = r[y] })
+    return rows.slice(0, 200).map((r, i) => {
+      const obj: Record<string, unknown> = { [xCol]: resolveCol(xCol, r, i) }
+      yCols.forEach((y) => { obj[y] = resolveCol(y, r, i) })
       return obj
     })
   }, [rows, xCol, yCols, chartType, numericCols])
@@ -283,7 +288,7 @@ export default function VisualizationWorkspace({ datasetId }: Props) {
             <label className="label">X Axis / Category</label>
             <select className="select" value={xCol} onChange={(e) => setXCol(e.target.value)}>
               <option value="">Select column…</option>
-              {allCols.map((c) => <option key={c}>{c}</option>)}
+              {allCols.map((c) => <option key={c} value={c}>{c === ROW_NUM ? '# (Row Number)' : c}</option>)}
             </select>
           </div>
 
@@ -294,7 +299,7 @@ export default function VisualizationWorkspace({ datasetId }: Props) {
                 {numericCols.map((c) => (
                   <label key={c} className="flex items-center gap-2 cursor-pointer py-0.5">
                     <input type="checkbox" checked={yCols.includes(c)} onChange={() => toggleYCol(c)} className="accent-primary-600" />
-                    <span className="text-xs text-slate-700 dark:text-slate-300">{c}</span>
+                    <span className="text-xs text-slate-700 dark:text-slate-300">{c === ROW_NUM ? '# (Row Number)' : c}</span>
                   </label>
                 ))}
               </div>
