@@ -4,20 +4,21 @@ import numpy as np
 import pandas as pd
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-import anthropic
+import google.generativeai as genai
 
 from utils.storage import load_dataset, load_registry
 
 router = APIRouter()
 
-MODEL = "claude-sonnet-4-6"
+MODEL = "gemini-1.5-flash"
 
 
-def _get_client():
-    key = os.getenv("ANTHROPIC_API_KEY")
+def _get_model():
+    key = os.getenv("GEMINI_API_KEY")
     if not key:
-        raise HTTPException(503, "ANTHROPIC_API_KEY not configured")
-    return anthropic.Anthropic(api_key=key)
+        raise HTTPException(503, "GEMINI_API_KEY not configured")
+    genai.configure(api_key=key)
+    return genai.GenerativeModel(MODEL)
 
 
 def _dataset_summary(dataset_id: str) -> str:
@@ -55,33 +56,32 @@ def analyze_dataset(dataset_id: str):
     except FileNotFoundError:
         raise HTTPException(404, "Dataset not found")
 
-    client = _get_client()
+    model = _get_model()
 
-    system = """You are an expert data scientist. Analyze the dataset summary and return a JSON object with these exact keys:
-{
+    prompt = f"""You are an expert data scientist. Analyze this dataset summary and return ONLY a valid JSON object with these exact keys:
+{{
   "summary": "2-3 sentence overview of the dataset",
-  "insights": ["insight 1", "insight 2", ...],
-  "warnings": ["warning 1", ...],
-  "recommendations": ["recommendation 1", ...],
-  "quality_score": 0.0-1.0
-}
+  "insights": ["insight 1", "insight 2", "insight 3"],
+  "warnings": ["warning 1", "warning 2"],
+  "recommendations": ["recommendation 1", "recommendation 2", "recommendation 3"],
+  "quality_score": 0.75
+}}
 
-quality_score: 1.0 = perfect data, 0.0 = very poor quality. Base it on completeness, consistency, and outliers.
-Provide 3-6 items each for insights, warnings, and recommendations. Be specific and actionable. Return only valid JSON."""
+quality_score must be a number between 0.0 and 1.0 (1.0 = perfect data).
+Provide 3-6 items each for insights, warnings, and recommendations.
+Return ONLY valid JSON, no markdown, no explanation.
 
-    resp = client.messages.create(
-        model=MODEL,
-        max_tokens=1500,
-        system=system,
-        messages=[{"role": "user", "content": f"Analyze this dataset:\n\n{summary}"}],
-    )
+Dataset to analyze:
+{summary}"""
 
-    text = resp.content[0].text.strip()
-    # Extract JSON if wrapped in markdown
+    resp = model.generate_content(prompt)
+    text = resp.text.strip()
+
     if "```" in text:
         text = text.split("```")[1]
         if text.startswith("json"):
             text = text[4:]
+        text = text.split("```")[0]
 
     try:
         result = json.loads(text)
@@ -109,28 +109,23 @@ def chat_with_ai(dataset_id: str, body: ChatBody):
     except FileNotFoundError:
         raise HTTPException(404, "Dataset not found")
 
-    client = _get_client()
+    model = _get_model()
 
-    system = f"""You are a helpful data science assistant. The user is working with the following dataset:
+    system_context = f"""You are a helpful data science assistant. The user is working with this dataset:
 
 {summary}
 
-Answer questions about this data concisely and accurately. When suggesting operations, be specific about column names and methods. If asked to do something you cannot do directly, explain what steps the user should take in the app."""
+Answer questions about this data concisely and accurately. When suggesting operations, be specific about column names and methods."""
 
-    messages = []
-    for msg in body.history[-10:]:
-        if msg.get("role") in ("user", "assistant"):
-            messages.append({"role": msg["role"], "content": msg["content"]})
-    messages.append({"role": "user", "content": body.message})
+    history_text = ""
+    for msg in body.history[-6:]:
+        role = "User" if msg.get("role") == "user" else "Assistant"
+        history_text += f"{role}: {msg.get('content', '')}\n"
 
-    resp = client.messages.create(
-        model=MODEL,
-        max_tokens=1000,
-        system=system,
-        messages=messages,
-    )
+    full_prompt = f"{system_context}\n\nConversation so far:\n{history_text}\nUser: {body.message}\nAssistant:"
 
-    return {"response": resp.content[0].text}
+    resp = model.generate_content(full_prompt)
+    return {"response": resp.text.strip()}
 
 
 @router.post("/{dataset_id}/cleaning-suggestions")
@@ -140,24 +135,23 @@ def ai_cleaning_suggestions(dataset_id: str):
     except FileNotFoundError:
         raise HTTPException(404, "Dataset not found")
 
-    client = _get_client()
+    model = _get_model()
 
-    system = """You are an expert data scientist. Given a dataset summary, return a JSON array of cleaning suggestions.
-Each suggestion must have: {"title": "...", "description": "...", "priority": "high|medium|low", "operation": "fill_missing|remove_duplicates|handle_outliers|normalize|encode|trim_text"}
-Return only valid JSON array, 3-8 suggestions."""
+    prompt = f"""You are an expert data scientist. Return ONLY a valid JSON array of cleaning suggestions (3-6 items).
+Each item must have: {{"title": "...", "description": "...", "priority": "high|medium|low", "operation": "fill_missing|remove_duplicates|handle_outliers|normalize|encode|trim_text"}}
+Return ONLY the JSON array, no markdown.
 
-    resp = client.messages.create(
-        model=MODEL,
-        max_tokens=800,
-        system=system,
-        messages=[{"role": "user", "content": f"Suggest cleaning operations for:\n\n{summary}"}],
-    )
+Dataset:
+{summary}"""
 
-    text = resp.content[0].text.strip()
+    resp = model.generate_content(prompt)
+    text = resp.text.strip()
+
     if "```" in text:
         text = text.split("```")[1]
         if text.startswith("json"):
             text = text[4:]
+        text = text.split("```")[0]
 
     try:
         suggestions = json.loads(text)
