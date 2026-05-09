@@ -53,6 +53,7 @@ export default function MergeWorkspace() {
   const [cNewName, setCNewName] = useState('concatenated_dataset')
   const [cLeftCols, setCLeftCols] = useState<string[]>([])
   const [cRightCols, setCRightCols] = useState<string[]>([])
+  const [joinMode, setJoinMode] = useState<'inner' | 'outer'>('inner')
 
   const toggleCol = (col: string, selected: string[], setSelected: (v: string[]) => void) => {
     setSelected(selected.includes(col) ? selected.filter((c) => c !== col) : [...selected, col])
@@ -74,6 +75,7 @@ export default function MergeWorkspace() {
     new_name: cNewName,
     left_columns: cLeftCols.length > 0 ? cLeftCols : undefined,
     right_columns: cRightCols.length > 0 ? cRightCols : undefined,
+    join: axis === 'rows' ? joinMode : undefined,
   }
 
   const handlePreview = async () => {
@@ -267,6 +269,26 @@ export default function MergeWorkspace() {
                 </button>
               </div>
             </div>
+
+            {axis === 'rows' && (
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl">
+                <label className="label">When columns don't match</label>
+                <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+                  <button
+                    onClick={() => setJoinMode('inner')}
+                    className={`flex-1 py-2 text-xs font-medium transition-colors ${joinMode === 'inner' ? 'bg-primary-500 text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                  >
+                    Keep common only
+                  </button>
+                  <button
+                    onClick={() => setJoinMode('outer')}
+                    className={`flex-1 py-2 text-xs font-medium transition-colors ${joinMode === 'outer' ? 'bg-primary-500 text-white' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                  >
+                    Keep all (fill empty)
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="p-3 bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800 rounded-xl">
               <label className="label text-green-700 dark:text-green-400">First Dataset</label>

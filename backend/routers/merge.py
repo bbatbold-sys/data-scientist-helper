@@ -29,6 +29,7 @@ class ConcatBody(BaseModel):
     new_name: str = "concatenated_dataset"
     left_columns: list[str] | None = None
     right_columns: list[str] | None = None
+    join: str = "inner"  # "inner" = only common columns, "outer" = all columns (fill missing with NaN)
 
 
 def _apply_concat(body: ConcatBody):
@@ -45,8 +46,8 @@ def _apply_concat(body: ConcatBody):
             raise HTTPException(400, f"Columns not in right dataset: {missing}")
         right = right[body.right_columns]
     ax = 0 if body.axis == "rows" else 1
-    # reset index for rows concat only; keep column names for columns concat
-    return pd.concat([left, right], axis=ax, ignore_index=(ax == 0))
+    join = body.join if ax == 0 else "outer"
+    return pd.concat([left, right], axis=ax, ignore_index=(ax == 0), join=join)
 
 
 @router.post("/concat")

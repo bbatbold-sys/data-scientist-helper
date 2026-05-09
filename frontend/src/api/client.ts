@@ -147,6 +147,7 @@ export interface ConcatParams {
   new_name: string
   left_columns?: string[]
   right_columns?: string[]
+  join?: 'inner' | 'outer'
 }
 
 export async function concatDatasets(params: ConcatParams): Promise<DatasetInfo> {
