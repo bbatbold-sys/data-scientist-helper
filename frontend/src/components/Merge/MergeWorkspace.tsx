@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { GitMerge, Eye, Plus, ArrowRight, Rows, Columns } from 'lucide-react'
+import { GitMerge, Eye, Plus, ArrowRight, AlignJustify, PanelLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { mergeDatasets, previewMerge, concatDatasets, previewConcat } from '../../api/client'
 import type { ConcatParams } from '../../api/client'
@@ -236,7 +236,7 @@ export default function MergeWorkspace() {
                       : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
                   }`}
                 >
-                  <Rows size={18} className="mx-auto mb-1 text-slate-500" />
+                  <AlignJustify size={18} className="mx-auto mb-1 text-slate-500" />
                   <p className="text-xs font-medium text-slate-700 dark:text-slate-300">By Rows</p>
                   <p className="text-xs text-slate-400 dark:text-slate-500 leading-tight">Stack datasets vertically</p>
                 </button>
@@ -248,7 +248,7 @@ export default function MergeWorkspace() {
                       : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
                   }`}
                 >
-                  <Columns size={18} className="mx-auto mb-1 text-slate-500" />
+                  <PanelLeft size={18} className="mx-auto mb-1 text-slate-500" />
                   <p className="text-xs font-medium text-slate-700 dark:text-slate-300">By Columns</p>
                   <p className="text-xs text-slate-400 dark:text-slate-500 leading-tight">Append columns side by side</p>
                 </button>
@@ -338,8 +338,8 @@ export default function MergeWorkspace() {
               </div>
               <div className="flex flex-col items-center gap-1">
                 {axis === 'rows'
-                  ? <Rows size={24} className="text-primary-400" />
-                  : <Columns size={24} className="text-primary-400" />}
+                  ? <AlignJustify size={24} className="text-primary-400" />
+                  : <PanelLeft size={24} className="text-primary-400" />}
                 <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">by {axis}</span>
               </div>
               <div className="text-center">
