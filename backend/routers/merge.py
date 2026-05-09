@@ -22,6 +22,64 @@ class MergeBody(BaseModel):
     new_name: str = "merged_dataset"
 
 
+class ConcatBody(BaseModel):
+    left_id: str
+    right_id: str
+    axis: str = "rows"   # "rows" or "columns"
+    new_name: str = "concatenated_dataset"
+
+
+@router.post("/concat")
+def concat_datasets(body: ConcatBody):
+    try:
+        left = load_dataset(body.left_id)
+        right = load_dataset(body.right_id)
+    except FileNotFoundError as e:
+        raise HTTPException(404, str(e))
+
+    if body.axis not in ("rows", "columns"):
+        raise HTTPException(400, "axis must be 'rows' or 'columns'")
+
+    ax = 0 if body.axis == "rows" else 1
+    try:
+        result = pd.concat([left, right], axis=ax, ignore_index=True)
+    except Exception as e:
+        raise HTTPException(400, f"Concatenation failed: {e}")
+
+    new_id = str(uuid.uuid4())
+    save_dataset(new_id, result)
+    update_registry_entry(new_id, body.new_name)
+    return compute_dataset_info(new_id, result, body.new_name)
+
+
+@router.post("/concat/preview")
+def concat_preview(body: ConcatBody):
+    try:
+        left = load_dataset(body.left_id)
+        right = load_dataset(body.right_id)
+    except FileNotFoundError as e:
+        raise HTTPException(404, str(e))
+
+    ax = 0 if body.axis == "rows" else 1
+    try:
+        result = pd.concat([left, right], axis=ax, ignore_index=True)
+    except Exception as e:
+        raise HTTPException(400, f"Concatenation failed: {e}")
+
+    preview = result.head(20)
+
+    def safe(v):
+        if pd.isna(v) if not isinstance(v, (list, dict)) else False:
+            return None
+        import numpy as np
+        if isinstance(v, np.integer): return int(v)
+        if isinstance(v, np.floating): return float(v)
+        return v
+
+    data = [{col: safe(row[col]) for col in preview.columns} for _, row in preview.iterrows()]
+    return {"data": data, "columns": result.columns.tolist(), "total_rows": len(result)}
+
+
 @router.post("/")
 def merge_datasets(body: MergeBody):
     try:

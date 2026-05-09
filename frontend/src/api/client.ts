@@ -140,6 +140,23 @@ export async function previewMerge(params: MergeParams) {
   return data
 }
 
+export interface ConcatParams {
+  left_id: string
+  right_id: string
+  axis: 'rows' | 'columns'
+  new_name: string
+}
+
+export async function concatDatasets(params: ConcatParams): Promise<DatasetInfo> {
+  const { data } = await api.post('/api/merge/concat', params)
+  return data
+}
+
+export async function previewConcat(params: ConcatParams) {
+  const { data } = await api.post('/api/merge/concat/preview', params)
+  return data
+}
+
 // ── AI ────────────────────────────────────────────────────────────────────────
 
 export async function analyzeDataset(id: string): Promise<AIInsight> {
